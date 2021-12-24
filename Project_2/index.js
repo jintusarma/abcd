@@ -1,31 +1,71 @@
-function Upload() {
-    var fileUpload = document.getElementById("fileUpload");
-    var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/;
-    if (regex.test(fileUpload.value.toLowerCase())) {
-        if (typeof (FileReader) != "undefined") {
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                var table = document.createElement("table");
-                var rows = e.target.result.split("\n");
-                for (var i = 0; i < rows.length; i++) {
-                    var cells = rows[i].split(",");
-                    if (cells.length > 1) {
-                        var row = table.insertRow(-1);
-                        for (var j = 0; j < cells.length; j++) {
-                            var cell = row.insertCell(-1);
-                            cell.innerHTML = cells[j];
-                        }
-                    }
-                }
-                var dvCSV = document.getElementById("dvCSV");
-                dvCSV.innerHTML = "";
-                dvCSV.appendChild(table);
-            }
-            reader.readAsText(fileUpload.files[0]);
-        } else {
-            alert("This browser does not support HTML5.");
+document.querySelectorAll(".drop-zone__input").forEach((inputElement) => {
+    const dropZoneElement = inputElement.closest(".drop-zone");
+
+    dropZoneElement.addEventListener("click", (e) => {
+        inputElement.click();
+    });
+
+    inputElement.addEventListener("change", (e) => {
+        if (inputElement.files.length) {
+            updateThumbnail(dropZoneElement, inputElement.files[0]);
         }
+    });
+
+    dropZoneElement.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZoneElement.classList.add("drop-zone--over");
+    });
+
+    ["dragleave", "dragend"].forEach((type) => {
+        dropZoneElement.addEventListener(type, (e) => {
+            dropZoneElement.classList.remove("drop-zone--over");
+        });
+    });
+
+    dropZoneElement.addEventListener("drop", (e) => {
+        e.preventDefault();
+
+        if (e.dataTransfer.files.length) {
+            inputElement.files = e.dataTransfer.files;
+            updateThumbnail(dropZoneElement, e.dataTransfer.files[0]);
+        }
+
+        dropZoneElement.classList.remove("drop-zone--over");
+    });
+});
+
+/**
+ * Updates the thumbnail on a drop zone element.
+ *
+ * @param {HTMLElement} dropZoneElement
+ * @param {File} file
+ */
+function updateThumbnail(dropZoneElement, file) {
+    let thumbnailElement = dropZoneElement.querySelector(".drop-zone__thumb");
+
+    // First time - remove the prompt
+    if (dropZoneElement.querySelector(".drop-zone__prompt")) {
+        dropZoneElement.querySelector(".drop-zone__prompt").remove();
+    }
+
+    // First time - there is no thumbnail element, so lets create it
+    if (!thumbnailElement) {
+        thumbnailElement = document.createElement("div");
+        thumbnailElement.classList.add("drop-zone__thumb");
+        dropZoneElement.appendChild(thumbnailElement);
+    }
+
+    thumbnailElement.dataset.label = file.name;
+
+    // Show thumbnail for image files
+    if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            thumbnailElement.style.backgroundImage = `url('${reader.result}')`;
+        };
     } else {
-        alert("Please upload a valid CSV file.");
+        thumbnailElement.style.backgroundImage = null;
     }
 }
